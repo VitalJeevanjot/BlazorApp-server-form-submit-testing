@@ -1,0 +1,123 @@
+﻿@using Newtonsoft.Json;
+@using BlazorApp_server_form_submit_testing.Data.Models;
+@using BlazorApp_server_form_submit_testing.Data;
+@using BlazorApp_server_form_submit_testing.Services;
+
+
+@inject DataModelService dmser;
+
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Index</PageTitle>
+
+<h1>@example</h1>
+
+Welcome to your new app.
+
+@*<button class="btn btn-secondary mt-2" @onclick="(() => SetupProjects())">First Setup Project</button>*@
+@foreach (DataModelExample _dme in dmes)
+{
+
+        <button class="btn btn-secondary mt-2" @onclick="(() => SetupProject(_dme))">Example Btn</button>
+
+}
+@if (example2 == true)
+{
+    
+}
+else
+{
+    <EditForm Model="@dme"
+       OnValidSubmit="@CustomFunctionToValidate" OnInvalidSubmit="@NotValidFunction">
+        <DataAnnotationsValidator />
+        @*<ValidationSummary />*@
+        <div class="form-group" style="width: 18rem;">
+            <button class="btn btn-secondary mt-2" @onclick="GoBack">Back</button>
+
+            <div class="mt-2">
+                <label for="project-name" style="font-weight: bold;">Name:</label>
+                <InputText id="project-name" class="form-control"
+                @bind-Value="@dme.Name" />
+                <ValidationMessage For="@(() => dme.Name)" />
+            </div>
+
+            <div class="mt-2">
+                <label for="project-name-t" style="font-weight: bold;">Other name:</label>
+                <InputText id="project-name-t" class="form-control"
+                @bind-Value="@dme.OtherName" />
+                <ValidationMessage For="@(() => dme.OtherName)" />
+            </div>
+
+            @if (@dme.OtherName != null)
+            {
+                <small>It exists.</small>
+            }
+
+            <button type="submit" class="btn btn-dark mt-2">Save</button>
+            <button type="button" class="btn btn-warning mt-2" style="margin-left: 10px;"
+            @onclick="SomeFunc">Delete</button>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+
+    public List<DataModelExample> dmes;
+    public DataModelExample dme = new DataModelExample();
+
+    public bool example = false;
+    public bool example2 = false;
+
+    protected override void OnInitialized()
+    {
+        SetupProjects();
+    }
+
+    public async Task<string> GetEmail()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var email = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        return email;
+    }
+
+    public async Task<int> SetupProjects()
+    {
+        var email = await GetEmail();
+        dmes = dmser.GetDataModel(email);
+        StateHasChanged();
+        return dmes.Count;
+    }
+
+    public void SetupProject(DataModelExample dmeT)
+    {
+        dme = dmeT;
+        example = !example;
+    }
+
+    public void GoBack()
+    {
+        example = !example;
+
+    }
+
+    public void SomeFunc()
+    {
+        example = !example;
+        StateHasChanged();
+    }
+
+    public async void CustomFunctionToValidate()
+    {
+        Console.WriteLine("Print IS Validated!.....");
+        var email = await GetEmail();
+    }
+
+    public void NotValidFunction()
+    {
+        Console.WriteLine("Print Not validated!.....");
+        return;
+    }
+}
